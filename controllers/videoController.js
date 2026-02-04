@@ -16,7 +16,15 @@ cloudinary.config({
 ================================================= */
 exports.uploadVideo = async (req, res) => {
   try {
-    const { title, category } = req.body;
+    const {
+  title,
+  category,
+  description,
+  tags,
+  ageLimit,
+  isFeatured
+} = req.body;
+
 
     if (!req.files || !req.files.video) {
       return res.status(400).json({ message: "Video fayli tanlanmagan" });
@@ -50,20 +58,20 @@ exports.uploadVideo = async (req, res) => {
     ============================= */
     const hlsUrl = result.secure_url.replace(".mp4", ".m3u8");
 
-    const video = await Video.create({
-      title,
-      category: category || "uncategorized",
+   const video = await Video.create({
+  title,
+  description,
+  tags: tags ? tags.split(",") : [],
+  ageLimit: ageLimit || 0,
+  isFeatured: isFeatured || false,
 
-      videoUrl: hlsUrl, // HLS
-      thumbnailUrl: result.eager?.[0]?.secure_url || "",
+  category,
+  videoUrl: hlsUrl,
+  thumbnailUrl: result.eager?.[0]?.secure_url || "",
+  cloudinaryId: result.public_id,
+  uploadedBy: req.user.id
+});
 
-      cloudinaryId: result.public_id, //  delete uchun kerak
-
-      uploadedBy: req.user.id,
-      likes: [],
-      dislikes: [],
-      comments: []
-    });
 
     res.status(201).json(video);
 
@@ -246,4 +254,46 @@ exports.replyToComment = async (req, res) => {
   await video.save();
 
   res.json(comment.replies);
+};
+
+
+exports.getByCategory = async (req, res) => {
+  const videos = await Video.find({ category: req.params.name }).limit(30);
+  res.json(videos);
+};
+
+
+exports.getFeatured = async (req, res) => {
+  const videos = await Video.find({ isFeatured: true }).limit(5);
+  res.json(videos);
+};
+
+exports.getTrending = async (req, res) => {
+  const videos = await Video.find()
+    .sort({ views: -1 })
+    .limit(20);
+
+  res.json(videos);
+};
+
+
+exports.searchVideos = async (req, res) => {
+  const q = req.query.q;
+
+  const videos = await Video.find({
+    $or: [
+      { title: { $regex: q, $options: "i" } },
+      { tags: { $regex: q, $options: "i" } }
+    ]
+  });
+
+  res.json(videos);
+};
+
+
+exports.addView = async (req, res) => {
+  await Video.findByIdAndUpdate(req.params.id, {
+    $inc: { views: 1 }
+  });
+  res.sendStatus(200);
 };

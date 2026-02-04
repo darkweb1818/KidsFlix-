@@ -8,12 +8,23 @@ const {
   getVideos,
   deleteVideo,
   likeVideo,
-  dislikeVideo
+  dislikeVideo,
+    getByCategory,
+    getVideo,
+    getFeatured,
+    getTrending,
+    searchVideos,
+    addView
 } = require("../controllers/videoController");
 const authMiddleware = require("../middleware/authMiddleware");
 
 // ================= Public routes =================
 router.get("/", auth, getVideos); // Hamma video ro‘yxatini ko‘ra oladi
+router.get("/category/:name", getByCategory);
+router.get("/featured", getFeatured);
+router.get("/trending", getTrending);
+router.get("/search", searchVideos);
+router.put("/:id/view", addView);
 
 // ================= Admin routes =================
 router.post("/upload", auth, role("admin"), uploadVideo); // video upload
