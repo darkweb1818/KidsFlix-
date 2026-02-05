@@ -4,10 +4,10 @@ const cors = require("cors");
 const path = require("path");
 require("dotenv").config();
 
-// 1. Routeslarni import qilish (Sizning loyihangizdagi fayl nomlariga mos)
+const userRoutes = require("./routes/userRoutes");
 const videoRoutes = require("./routes/videoRoutes");
 const authRoutes = require("./routes/authRoutes");
-const userRoutes = require("./routes/userRoutes"); // Agar foydalanuvchi sozlamalari bo'lsa
+
 
 const app = express();
 
@@ -16,7 +16,7 @@ app.use(cors()); // Frontenddan keladigan so'rovlarga ruxsat berish
 app.use(express.json()); // JSON ma'lumotlarni o'qish uchun
 app.use(express.urlencoded({ extended: true }));
 
-// 3. Statik papka (Agar rasmlar yoki videolarni serverdan bersangiz)
+
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // 4. API Yo'nalishlari (Endpoints)
@@ -42,11 +42,11 @@ if (!MONGO_URI) {
 mongoose
   .connect(MONGO_URI)
   .then(() => {
-    console.log("✅ MongoDB ulanishi muvaffaqiyatli amalga oshdi");
+    console.log(" MongoDB ulanishi muvaffaqiyatli amalga oshdi");
     app.listen(PORT, () => {
-      console.log(`🚀 Server http://localhost:${PORT} portida ishlamoqda`);
+      console.log(` Server http://localhost:${PORT} portida ishlamoqda`);
     });
   })
   .catch((err) => {
-    console.error("❌ MongoDB ulanishida xato:", err.message);
+    console.error(" MongoDB ulanishida xato:", err.message);
   });

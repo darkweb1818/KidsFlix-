@@ -3,28 +3,21 @@ const auth = require("../middleware/authMiddleware");
 const role = require("../middleware/roleMiddleware");
 const { addComment } = require("../controllers/videoController");
 const { likeComment, replyToComment } = require("../controllers/videoController");
+const {  getFeatured, getTrending } = require("../controllers/videoController");
+
 const {
   uploadVideo,
   getVideos,
   deleteVideo,
   likeVideo,
-  dislikeVideo,
-    getByCategory,
-    getVideo,
-    getFeatured,
-    getTrending,
-    searchVideos,
-    addView
+  dislikeVideo
 } = require("../controllers/videoController");
 const authMiddleware = require("../middleware/authMiddleware");
 
 // ================= Public routes =================
 router.get("/", auth, getVideos); // Hamma video ro‘yxatini ko‘ra oladi
-router.get("/category/:name", getByCategory);
-router.get("/featured", getFeatured);
-router.get("/trending", getTrending);
-router.get("/search", searchVideos);
-router.put("/:id/view", addView);
+router.get("/featured", auth, getFeatured);
+router.get("/trending", auth, getTrending);
 
 // ================= Admin routes =================
 router.post("/upload", auth, role("admin"), uploadVideo); // video upload
