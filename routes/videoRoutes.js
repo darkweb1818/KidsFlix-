@@ -1,35 +1,37 @@
 const router = require("express").Router();
 const auth = require("../middleware/authMiddleware");
 const role = require("../middleware/roleMiddleware");
-const { addComment } = require("../controllers/videoController");
-const { likeComment, replyToComment } = require("../controllers/videoController");
-const {  getFeatured, getTrending } = require("../controllers/videoController");
-
 const {
   uploadVideo,
   getVideos,
   deleteVideo,
   likeVideo,
-  dislikeVideo
+  dislikeVideo,
+  addComment,
+  likeComment,
+  replyToComment,
+  getFeatured,
+  getTrending,
+  getByCategory
 } = require("../controllers/videoController");
-const authMiddleware = require("../middleware/authMiddleware");
 
 // ================= Public routes =================
-router.get("/", auth, getVideos); // Hamma video ro‘yxatini ko‘ra oladi
+router.get("/", auth, getVideos);
 router.get("/featured", auth, getFeatured);
 router.get("/trending", auth, getTrending);
+router.get("/category/:name", auth, getByCategory);
 
 // ================= Admin routes =================
-router.post("/upload", auth, role("admin"), uploadVideo); // video upload
-router.delete("/:id", auth, role("admin"), deleteVideo);  // video o‘chirish
+router.post("/upload", auth, role("admin"), uploadVideo);
+router.delete("/:id", auth, role("admin"), deleteVideo);
 
 // ================= Like/Dislike routes =================
-router.put("/:id/like", authMiddleware, likeVideo);
-router.put("/:id/dislike", authMiddleware, dislikeVideo);
-router.post('/:id/comment', authMiddleware, addComment);
-// Izohga like bosish
-router.put('/:videoId/comments/:commentId/like', auth, likeComment);
+router.put("/:id/like", auth, likeVideo);
+router.put("/:id/dislike", auth, dislikeVideo);
 
-// Izohga javob yozish
-router.post('/:videoId/comments/:commentId/reply', auth, replyToComment);
+// ================= Comment routes =================
+router.post("/:id/comment", auth, addComment);
+router.put("/:videoId/comments/:commentId/like", auth, likeComment);
+router.post("/:videoId/comments/:commentId/reply", auth, replyToComment);
+
 module.exports = router;
