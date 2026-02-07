@@ -12,8 +12,10 @@ const {
   replyToComment,
   getFeatured,
   getTrending,
-  getByCategory
+  getByCategory,
+  searchVideos
 } = require("../controllers/videoController");
+
 
 // ================= Public routes =================
 router.get("/", auth, getVideos);
@@ -21,13 +23,19 @@ router.get("/featured", auth, getFeatured);
 router.get("/trending", auth, getTrending);
 router.get("/category/:name", auth, getByCategory);
 
+// 🔥 SEARCH ALWAYS BEFORE :id routes
+router.get("/search", auth, searchVideos);
+
+
 // ================= Admin routes =================
 router.post("/upload", auth, role("admin"), uploadVideo);
 router.delete("/:id", auth, role("admin"), deleteVideo);
 
+
 // ================= Like/Dislike routes =================
 router.put("/:id/like", auth, likeVideo);
 router.put("/:id/dislike", auth, dislikeVideo);
+
 
 // ================= Comment routes =================
 router.post("/:id/comment", auth, addComment);

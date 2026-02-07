@@ -1,6 +1,7 @@
 const Video = require("../models/Video");
 const cloudinary = require("cloudinary").v2;
 
+
 // Cloudinary config
 cloudinary.config({
   cloud_name: process.env.CLOUD_NAME,
@@ -179,3 +180,21 @@ exports.replyToComment = async (req, res) => {
   await video.save();
   res.json(comment.replies);
 };
+
+// 🔍 SEARCH VIDEOS
+exports.searchVideos = async (req, res) => {
+  try {
+    const q = req.query.q;
+
+    if (!q) return res.json([]);
+
+    const videos = await Video.find({
+      title: { $regex: q, $options: "i" }
+    });
+
+    res.json(videos);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+

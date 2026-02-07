@@ -8,6 +8,7 @@ require("dotenv").config();
 const userRoutes = require("./routes/userRoutes");
 const videoRoutes = require("./routes/videoRoutes");
 const authRoutes = require("./routes/authRoutes");
+const historyRoutes = require("./routes/historyRoutes");
 
 const app = express();
 
@@ -36,6 +37,8 @@ app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).send({ message: "Serverda ichki xatolik yuz berdi!" });
 });
+// Korilganlarni saqlash yo'nalishi
+app.use("/api/history", historyRoutes);
 
 // MongoDB va Server ishga tushirish
 const PORT = process.env.PORT || 5000;
