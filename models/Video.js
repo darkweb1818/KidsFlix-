@@ -5,7 +5,7 @@ const videoSchema = new mongoose.Schema({
 
   description: String, // NEW
   videoUrl: { type: String, required: true },
-  thumbnailUrl: String,
+  thumbnail: String,
 
   category: String,
   tags: [String], // NEW (search uchun)

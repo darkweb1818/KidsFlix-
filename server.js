@@ -31,14 +31,16 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api/auth", authRoutes);
 app.use("/api/videos", videoRoutes);
 if (userRoutes) app.use("/api/users", userRoutes);
-
+// Korilganlarni saqlash yo'nalishi
+app.use("/api/history", historyRoutes);
 // Global xatoliklarni ushlash
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).send({ message: "Serverda ichki xatolik yuz berdi!" });
 });
-// Korilganlarni saqlash yo'nalishi
-app.use("/api/history", historyRoutes);
+
+
+
 
 // MongoDB va Server ishga tushirish
 const PORT = process.env.PORT || 5000;

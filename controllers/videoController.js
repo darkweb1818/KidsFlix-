@@ -10,43 +10,52 @@ cloudinary.config({
 });
 
 // ================= Upload Video =================
+
+
 exports.uploadVideo = async (req, res) => {
   try {
-    const { title = "", description = "", tags = "", ageLimit = 0, isFeatured = false } = req.body;
-
     if (!req.files || !req.files.video) {
-      return res.status(400).json({ message: "Video fayli tanlanmagan" });
+      return res.status(400).json({ message: "Video file required" });
     }
 
     const file = req.files.video;
 
-    const result = await cloudinary.uploader.upload(file.tempFilePath, {
-      resource_type: "video",
-      folder: "videos",
-      streaming_profile: "full_hd",
-      eager: [{ width: 300, height: 200, crop: "pad", format: "jpg" }]
-    });
+const result = await new Promise((resolve, reject) => {
+  cloudinary.uploader.upload_large(
+    file.tempFilePath,
+    { resource_type: "video" },
+    (err, res) => {
+      if (err) reject(err);
+      else resolve(res);
+    }
+  );
+});
 
-    const hlsUrl = result.secure_url.replace(".mp4", ".m3u8");
+
+    console.log("Cloudinary result:", result.secure_url);
+
+        const thumbnail = result.secure_url
+      .replace("/video/upload/", "/video/upload/so_1/")
+      .replace(".mp4", ".jpg");
 
     const video = await Video.create({
-      title,
-      description,
-      tags: tags ? tags.split(",").map(t => t.trim()) : [],
-      ageLimit: Number(ageLimit),
-      isFeatured: isFeatured === "true" || isFeatured === true,
-      videoUrl: hlsUrl,
-      thumbnailUrl: result.eager?.[0]?.secure_url || "",
-      cloudinaryId: result.public_id,
-      uploadedBy: req.user.id
+      title: req.body.title,
+      description: req.body.description,
+      videoUrl: result.secure_url || result.url, // ✅ FIX
+      publicId: result.public_id,
+      thumbnail: thumbnail
     });
 
     res.status(201).json(video);
+
   } catch (err) {
-    console.error("Upload Error:", err);
-    res.status(500).json({ message: "Serverda yuklash xatoligi" });
+    console.error("UPLOAD ERROR:", err);
+    res.status(500).json({ message: err.message });
   }
 };
+
+
+
 
 
 
