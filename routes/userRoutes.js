@@ -1,53 +1,48 @@
-////const userRouter = require("express").Router();
-////const express = require("express");
-////const router = express.Router();
-
-////// Example route
-////router.get("/test", (req, res) => {
-////  res.json({ message: "User route works!" });
-////});
-
-////module.exports = router;
-//const router = require("express").Router();
-//const User = require("../models/User");
-
-//// ✅ ONLINE USERS (stories uchun)
-//router.get("/online", async (req, res) => {
-//  try {
-//    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-
-//    const users = await User.find({
-//      lastActive: { $gte: fiveMinutesAgo }
-//    })
-//      .select("name avatar")
-//      .limit(20)
-//      .sort({ lastActive: -1 });
-
-//    res.json(users);
-//  } catch (err) {
-//    res.status(500).json({ message: err.message });
-//  }
-//});
-
-
-//module.exports = router;
-// routes/userRoutes.js
-// routes/userRoutes.js
-// routes/userRoutes.js
 const express = require("express");
 const router = express.Router();
 const User = require("../models/User");
 
-// Get all users
+
 router.get("/all", async (req, res) => {
   try {
-    const users = await User.find().select("name avatar followers following");
-    res.json(users);
+    const users = await User.find().select("-password");
+
+    const safeUsers = users.map((u) => ({
+      ...u._doc,
+      followers: u.followers || [],
+      following: u.following || [],
+    }));
+
+    res.json(safeUsers);
+  } catch (err) {
+    console.error("GET ALL USERS ERROR:", err);
+    res.status(500).json({ msg: err.message });
+  }
+});
+
+/* =================================================
+   GET SINGLE USER ( PROFILE UCHUN MUHIM)
+   /api/users/:id
+================================================= */
+// GET SINGLE USER (PROFILE)
+router.get("/:id", async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id)
+      .select("-password")
+      .populate("followers", "name avatar _id")
+      .populate("following", "name avatar _id");
+
+    if (!user)
+      return res.status(404).json({ msg: "User not found" });
+
+    res.json(user);
   } catch (err) {
     console.error(err);
     res.status(500).json({ msg: "Server error" });
   }
 });
+
+
 
 // Follow/unfollow user
 router.put("/follow/:id", async (req, res) => {
@@ -89,6 +84,27 @@ router.put("/follow/:id", async (req, res) => {
     res.status(500).json({ msg: "Server error" });
   }
 });
+
+router.put("/unfollow/:id", async (req, res) => {
+  try {
+    const { followerId } = req.body;
+    const targetId = req.params.id;
+
+    await User.findByIdAndUpdate(targetId, {
+      $pull: { followers: followerId },
+    });
+
+    await User.findByIdAndUpdate(followerId, {
+      $pull: { following: targetId },
+    });
+
+    res.json({ message: "Unfollowed" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 
 module.exports = router;
 
