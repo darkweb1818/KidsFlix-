@@ -1,107 +1,47 @@
-//const Chat = require("../models/Chat"); // Mongoose model
+const Chat = require("../models/Chat");
+const mongoose = require("mongoose");
 
-//// GET chat history
-//exports.getChat = async (req, res) => {
-//  const { id } = req.params;
-//  const { me } = req.query;
-//  const messages = await Chat.find({
-//    $or: [
-//      { sender: me, receiver: id },
-//      { sender: id, receiver: me }
-//    ]
-//  }).sort({ createdAt: 1 });
-//  res.json(messages);
-//};
 
-//// SEND text message
-//exports.sendMessage = async (req, res) => {
-//  const msg = await Chat.create(req.body);
-//  res.json(msg);
-//};
 
-//// SEND file (image/video/audio)
-//exports.uploadFile = async (req, res) => {
-//  if (!req.file) return res.status(400).json({ error: "File missing" });
-
-//  const fileType = req.file.mimetype;
-//  const fileUrl = `/uploads/${req.file.filename}`;
-
-//  const msg = await Chat.create({
-//    sender: req.body.sender,
-//    receiver: req.body.receiver,
-//    text: req.body.text || "",
-//    fileUrl,
-//    fileType
-//  });
-
-//  res.json(msg);
-//};
-
-//// EDIT message
-//exports.editMessage = async (req, res) => {
-//  const msg = await Chat.findByIdAndUpdate(req.params.id, { text: req.body.text }, { new: true });
-//  res.json(msg);
-//};
-
-//// DELETE message
-//exports.deleteMessage = async (req, res) => {
-//  await Chat.findByIdAndDelete(req.params.id);
-//  res.json({ success: true });
-//};
-const Chat = require("../models/Chat"); // Mongoose model
-
-// GET chat history
-exports.getChat = async (req, res) => {
-  const { id } = req.params;
+exports.getChatList = async (req, res) => {
   const { me } = req.query;
-  const messages = await Chat.find({
-    $or: [
-      { sender: me, receiver: id },
-      { sender: id, receiver: me }
-    ]
-  }).sort({ createdAt: 1 });
-  res.json(messages);
-};
 
-// SEND text message
-exports.sendMessage = async (req, res) => {
-  const msg = await Chat.create(req.body);
-  res.json(msg);
-};
+  try {
+    const messages = await Chat.find({
+      $or: [{ sender: me }, { receiver: me }]
+    })
+      .sort({ createdAt: -1 })
+      .populate("sender receiver", "name avatar");
 
-// SEND file (image/video/audio)
-exports.uploadFile = async (req, res) => {
-  if (!req.file) return res.status(400).json({ error: "File missing" });
+    const chatMap = {};
 
-  const fileType = req.file.mimetype.startsWith("image")
-    ? "image"
-    : req.file.mimetype.startsWith("video")
-    ? "video"
-    : "audio";
+    messages.forEach((msg) => {
+      const otherUser =
+        msg.sender._id.toString() === me
+          ? msg.receiver
+          : msg.sender;
 
-  const fileUrl = `/uploads/${req.file.filename}`;
+      if (!chatMap[otherUser._id]) {
+        chatMap[otherUser._id] = {
+          _id: otherUser._id,
+          user: otherUser,
+          lastMessage: msg.text,
+          unseenCount: 0,
+          createdAt: msg.createdAt
+        };
+      }
 
-  const msg = await Chat.create({
-    sender: req.body.sender,
-    receiver: req.body.receiver,
-    text: req.body.text || "",
-    fileUrl,
-    fileType,
-    reactions: [],
-    seen: false
-  });
+      if (
+        msg.receiver._id.toString() === me &&
+        !msg.seen
+      ) {
+        chatMap[otherUser._id].unseenCount++;
+      }
+    });
 
-  res.json(msg);
-};
-
-// EDIT message
-exports.editMessage = async (req, res) => {
-  const msg = await Chat.findByIdAndUpdate(req.params.id, { text: req.body.text }, { new: true });
-  res.json(msg);
-};
-
-// DELETE message
-exports.deleteMessage = async (req, res) => {
-  await Chat.findByIdAndDelete(req.params.id);
-  res.json({ success: true });
+    res.json(Object.values(chatMap));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to load chats" });
+  }
 };
