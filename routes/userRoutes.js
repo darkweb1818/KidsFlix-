@@ -3,6 +3,13 @@ const router = express.Router();
 const User = require("../models/User");
 const {updateUser} = require("../controllers/userController");
 
+const multer = require("multer");
+const cloudinary = require("../config/cloudinary");
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
+
+
+
 router.get("/all", async (req, res) => {
   try {
     const users = await User.find().select("-password");
@@ -24,6 +31,28 @@ router.get("/all", async (req, res) => {
    GET SINGLE USER ( PROFILE UCHUN MUHIM)
    /api/users/:id
 ================================================= */
+router.get("/check-username", async (req, res) => {
+  try {
+    const { username } = req.query;
+
+    if (!username || username.trim() === "") {
+      return res.status(400).json({ message: "Username required" });
+    }
+
+    const existingUser = await User.findOne({
+      username: username.toLowerCase()
+    });
+
+    res.json({ exists: !!existingUser });
+
+  } catch (err) {
+    console.error("Check username error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
+
 // GET SINGLE USER (PROFILE)
 router.get("/:id", async (req, res) => {
   try {
@@ -42,77 +71,42 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+
 router.put("/:id", async (req, res) => {
   const { name, username, bio, profilePicture } = req.body;
 
-  // 🔴 Majburiy fieldlar
-  if (!name || !name.trim()) {
+  if (!name?.trim())
     return res.status(400).json({ message: "Full name is required" });
-  }
 
-  if (!username || !username.trim()) {
+  if (!username?.trim())
     return res.status(400).json({ message: "Username is required" });
-  }
 
   try {
+    const existingUser = await User.findOne({
+      username: username.toLowerCase(),
+      _id: { $ne: req.params.id }
+    });
+
+    if (existingUser)
+      return res.status(400).json({ message: "Username already taken" });
+
     const user = await User.findById(req.params.id);
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user)
+      return res.status(404).json({ message: "User not found" });
 
     user.name = name.trim();
-    user.username = username.trim();
-    user.bio = bio ?? user.bio;
-    user.profilePicture = profilePicture ?? user.profilePicture;
+    user.username = username.toLowerCase().trim();
+    user.bio = bio;
+    user.profilePicture = profilePicture;
 
     await user.save();
 
     res.json(user);
   } catch (err) {
-    console.error("Update user error:", err);
+    console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 });
-
-
-// Follow/unfollow user
-//router.put("/follow/:id", async (req, res) => {
-//  const { id } = req.params; // user to follow
-//  const { followerId } = req.body; // who is following
-
-//  if (id === followerId)
-//    return res.status(400).json({ msg: "Cannot follow yourself" });
-
-//  try {
-//    const userToFollow = await User.findById(id);
-//    const follower = await User.findById(followerId);
-
-//    if (!userToFollow || !follower)
-//      return res.status(404).json({ msg: "User not found" });
-
-//    let type = "";
-//    if (userToFollow.followers.includes(followerId)) {
-//      // unfollow
-//      userToFollow.followers.pull(followerId);
-//      follower.following.pull(id);
-//      type = "unfollow";
-//    } else {
-//      // follow
-//      userToFollow.followers.push(followerId);
-//      follower.following.push(id);
-//      type = "follow";
-//    }
-
-//    await userToFollow.save();
-//    await follower.save();
-
-//    // Socket orqali barcha klientlarga yuborish
-//    global.io.emit("followUpdated", { userId: id, followerId, type });
-
-//    res.json({ msg: "Success", type });
-//  } catch (err) {
-//    console.error(err);
-//    res.status(500).json({ msg: "Server error" });
-//  }
-//});
 
 // Follow / unfollow user
 router.put("/follow/:id", async (req, res) => {
@@ -182,6 +176,32 @@ router.put("/:id", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+//  Profile rasm upload
+router.post("/upload-profile/:id", upload.single("image"), async (req, res) => {
+  try {
+    const result = await cloudinary.uploader.upload_stream(
+      { folder: "profiles" },
+      async (error, result) => {
+        if (error) return res.status(500).json({ message: "Upload failed" });
+
+        const user = await User.findById(req.params.id);
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        user.profilePicture = result.secure_url;
+        await user.save();
+
+        res.json({ profilePicture: result.secure_url });
+      }
+    );
+
+    result.end(req.file.buffer);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 module.exports = router;
 
 
