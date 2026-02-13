@@ -14,7 +14,7 @@ const videoRoutes = require("./routes/videoRoutes");
 const authRoutes = require("./routes/authRoutes");
 const historyRoutes = require("./routes/historyRoutes");
 const chatRoutes = require("./routes/chatRoutes");
-
+const postRoutes = require("./routes/posts");
 /* ================= MODELS ================= */
 const User = require("./models/User");
 const Chat = require("./models/Chat"); // ✅ FAQT SHU YETADI (Message kerak emas)
@@ -137,7 +137,7 @@ app.use("/api/videos", videoRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/history", historyRoutes);
 app.use("/api/chats", chatRoutes);
-
+app.use("/api/posts", postRoutes);
 /* =================================================
    DATABASE + START
 ================================================= */

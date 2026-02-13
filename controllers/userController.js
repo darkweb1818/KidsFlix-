@@ -45,3 +45,13 @@ exports.unfollowUser = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+exports.updateUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updatedUser = await User.findByIdAndUpdate(id, req.body, { new: true });
+    if (!updatedUser) return res.status(404).json({ message: "User not found" });
+    res.json(updatedUser);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
